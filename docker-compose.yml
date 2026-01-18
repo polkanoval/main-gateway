@@ -1,0 +1,19 @@
+services:
+  main-gateway:
+    image: nginx:stable-alpine
+    container_name: main-gateway
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Монтируем наш конфиг внутрь контейнера
+      - ./nginx/gateway.conf:/etc/nginx/conf.d/default.conf
+      # Монтируем папку с SSL-сертификатами с сервера
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - web_network
+
+networks:
+  web_network:
+    external: true
