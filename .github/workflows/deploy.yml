@@ -1,0 +1,38 @@
+name: Deploy Main Nginx Gateway
+
+on:
+  push:
+    branches:
+      - main # Запускать при пуше в ветку main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Add SSH Key to Agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy Configs via SCP
+        run: |
+          # Создаем папку на сервере, если её нет
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p /var/www/main-gateway/nginx/conf/"
+          # Копируем файлы на сервер в нужную папку
+          scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.USER }}@${{ secrets.HOST }}:/var/www/main-gateway/
+          scp -o StrictHostKeyChecking=no nginx/gateway.conf ${{ secrets.USER }}@${{ secrets.HOST }}:/var/www/main-gateway/nginx/gateway.conf
+
+      - name: Run deploy script on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/main-gateway
+            # Просто перезапускаем контейнер, он подхватит новые конфиги
+            docker compose pull
+            docker compose up -d --force-recreate main-gateway
