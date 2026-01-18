@@ -19,10 +19,13 @@ jobs:
 
       - name: Copy Configs via SCP
         run: |
-          # Создаем папку на сервере, если её нет
-          ssh -o StrictHostKeyChecking=no ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p /var/www/main-gateway/nginx/conf/"
-          # Копируем файлы на сервер в нужную папку
+          # 1. Создаем только те папки, которые реально нужны
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p /var/www/main-gateway/nginx/"
+
+          # 2. Копируем docker-compose.yml в корень проекта
           scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.USER }}@${{ secrets.HOST }}:/var/www/main-gateway/
+
+          # 3. Копируем конфиг напрямую в папку nginx/ (без лишней подпапки conf/)
           scp -o StrictHostKeyChecking=no nginx/gateway.conf ${{ secrets.USER }}@${{ secrets.HOST }}:/var/www/main-gateway/nginx/gateway.conf
 
       - name: Run deploy script on server
